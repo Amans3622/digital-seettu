@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Log in · Digital Seettu{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+  <div class="container auth-shell">
+    <aside class="auth-aside">
+      <div class="auth-aside-copy">
+        <span class="eyebrow light">Digital Seettu</span>
+        <h2>A seettu is only as strong as its records.</h2>
+        <p>Log in to see the shared ledger, your next payment and whose turn receives the pot.</p>
+        <ul class="auth-ticks">
+          <li>Every contribution visible to the group</li>
+          <li>Round schedule generated automatically</li>
+          <li>Reminders before the money is due</li>
+        </ul>
+      </div>
+      <figure class="auth-art">
+        <img src="{{ url_for('static', filename='img/illustration-auth.webp') }}"
+             alt="Illustration of a couple adding a coin to a traditional seettu pot"
+             width="768" height="1024" loading="lazy">
+      </figure>
+    </aside>
+
+    <div class="auth-card">
+      <span class="eyebrow">Welcome back</span>
+      <h1>Log in to your account</h1>
+      <p class="muted">Use the email address you registered with.</p>
+
+      <form method="post" class="form-stack" novalidate>
+        <div class="field">
+          <label for="email">Email address</label>
+          <input type="email" id="email" name="email" value="{{ email }}" autocomplete="email" required>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="password-wrap">
+            <input type="password" id="password" name="password" autocomplete="current-password" required>
+            <button type="button" class="password-toggle" data-toggle-password="password" aria-label="Show password">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-lg btn-block" type="submit">Log in</button>
+      </form>
+
+      <p class="auth-switch">New to Digital Seettu? <a href="{{ url_for('auth.register') }}">Create an account</a></p>
+    </div>
+  </div>
+</section>
+{% endblock %}

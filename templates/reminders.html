@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Reminders · Digital Seettu{% endblock %}
+
+{% block content %}
+<section class="container page">
+  <div class="page-head">
+    <div>
+      <span class="eyebrow">Reminder centre</span>
+      <h1>Reminders</h1>
+      <p class="muted">Payment reminders are created for anything due in the next {{ reminder_days }} days, plus anything already overdue.</p>
+    </div>
+    {% if own_groups %}
+      <div class="head-actions">
+        <form method="post" action="{{ url_for('dashboard.run_reminders') }}">
+          <button class="btn btn-primary" type="submit">Send reminders for all my groups</button>
+        </form>
+      </div>
+    {% endif %}
+  </div>
+
+  {% if own_groups %}
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <span class="eyebrow">Organiser view</span>
+          <h2>Due and overdue collections</h2>
+        </div>
+        <span class="muted small">{{ due|length }} payment{{ '' if due|length == 1 else 's' }} in the reminder window</span>
+      </div>
+
+      {% if due %}
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr><th>Member</th><th>Group</th><th>Round</th><th>Due</th><th class="num">Amount</th><th></th></tr>
+            </thead>
+            <tbody>
+              {% for row in due %}
+                <tr>
+                  <td><strong>{{ row.full_name }}</strong><br><small class="muted">{{ row.email }}</small></td>
+                  <td><a class="link-arrow" href="{{ url_for('groups.detail', group_id=row.group_id) }}">{{ row.group_name }}</a></td>
+                  <td>Round {{ row.round_no }}</td>
+                  <td>
+                    {{ row.due_date|datefmt }}
+                    {% if row.due_date < today %}
+                      <span class="badge badge-overdue">Overdue</span>
+                    {% endif %}
+                  </td>
+                  <td class="num">{{ row.amount|money }}</td>
+                  <td class="num">
+                    <form method="post" action="{{ url_for('dashboard.run_reminders') }}">
+                      <input type="hidden" name="group_id" value="{{ row.group_id }}">
+                      <button class="btn btn-xs btn-soft" type="submit">Remind group</button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="empty-state compact">
+          <h3>Nothing due right now</h3>
+          <p>When a payment enters the {{ reminder_days }}-day window it will appear here.</p>
+        </div>
+      {% endif %}
+
+      <div class="info-strip">
+        <span class="info-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>
+        </span>
+        <p>
+          <strong>Automatic reminders:</strong> schedule <code>python send_reminders.py</code> once a day with Windows Task Scheduler.
+          It creates the in-app reminders members see below and can also send email if SMTP is configured in <code>.env</code>.
+        </p>
+      </div>
+    </section>
+  {% endif %}
+
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <span class="eyebrow">Your inbox</span>
+        <h2>Reminder messages</h2>
+      </div>
+      {% if inbox %}
+        <form method="post" action="{{ url_for('dashboard.read_reminders') }}">
+          <button class="btn btn-outline btn-sm" type="submit">Mark all as read</button>
+        </form>
+      {% endif %}
+    </div>
+
+    {% if inbox %}
+      <ul class="reminder-list">
+        {% for reminder in inbox %}
+          {% set overdue = reminder.payment_status == 'pending' and reminder.due_date < today %}
+          <li class="reminder-item {{ 'is-unread' if not reminder.is_read }}">
+            <span class="reminder-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/></svg>
+            </span>
+            <div class="reminder-body">
+              <p>{{ reminder.message }}</p>
+              <div class="reminder-meta">
+                <a href="{{ url_for('groups.detail', group_id=reminder.group_id) }}">{{ reminder.group_name }}</a>
+                <span>Round {{ reminder.round_no }} · due {{ reminder.due_date|datefmt }}</span>
+                <span>Sent {{ reminder.created_at|datefmt }}</span>
+              </div>
+            </div>
+            {% if reminder.payment_status == 'paid' %}
+              <span class="badge badge-paid">Paid</span>
+            {% elif overdue %}
+              <span class="badge badge-overdue">Overdue</span>
+            {% else %}
+              <span class="badge badge-pending">Pending</span>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="empty-state compact">
+        <span class="empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/></svg>
+        </span>
+        <h3>No reminders yet</h3>
+        <p>When you are a member of an active group, reminders for upcoming payments will appear here.</p>
+      </div>
+    {% endif %}
+  </section>
+</section>
+{% endblock %}

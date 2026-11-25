@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Create an account · Digital Seettu{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+  <div class="container auth-shell">
+    <aside class="auth-aside">
+      <div class="auth-aside-copy">
+        <span class="eyebrow light">Get started</span>
+        <h2>One account. Every group you belong to.</h2>
+        <p>Choose your role now. You can join other organisers' groups with an invite code at any time.</p>
+        <ul class="auth-ticks">
+          <li>Organisers create groups and record payments</li>
+          <li>Members follow the ledger and their own turn</li>
+          <li>Everyone gets the same schedule and reminders</li>
+        </ul>
+      </div>
+      <figure class="auth-art">
+        <img src="{{ url_for('static', filename='img/illustration-auth.webp') }}"
+             alt="Illustration of a couple adding a coin to a traditional seettu pot"
+             width="768" height="1024" loading="lazy">
+      </figure>
+    </aside>
+
+    <div class="auth-card auth-card-wide">
+      <span class="eyebrow">Create your account</span>
+      <h1>Join Digital Seettu</h1>
+      <p class="muted">It takes less than a minute. All fields marked * are required.</p>
+
+      <form method="post" class="form-stack" data-validate data-match-message="The two passwords do not match." novalidate>
+        <div class="field">
+          <label for="full_name">Full name *</label>
+          <input type="text" id="full_name" name="full_name" value="{{ form.full_name }}" autocomplete="name" minlength="3" maxlength="100" required>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="email">Email address *</label>
+            <input type="email" id="email" name="email" value="{{ form.email }}" autocomplete="email" required>
+          </div>
+          <div class="field">
+            <label for="phone">Mobile number</label>
+            <input type="tel" id="phone" name="phone" value="{{ form.phone }}" placeholder="07X XXX XXXX" autocomplete="tel" maxlength="25">
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="label">How will you use Seettu? *</span>
+          <div class="role-picker">
+            <label class="role-option">
+              <input type="radio" name="role" value="organiser" {% if form.role == 'organiser' %}checked{% endif %}>
+              <span class="role-option-body">
+                <strong>Organiser</strong>
+                <small>I create groups, add members and record payments.</small>
+              </span>
+            </label>
+            <label class="role-option">
+              <input type="radio" name="role" value="member" {% if form.role == 'member' %}checked{% endif %}>
+              <span class="role-option-body">
+                <strong>Member</strong>
+                <small>I join groups, pay contributions and follow the schedule.</small>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="password">Password *</label>
+            <div class="password-wrap">
+              <input type="password" id="password" name="password" autocomplete="new-password" minlength="8" required data-password-main>
+              <button type="button" class="password-toggle" data-toggle-password="password" aria-label="Show password">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            <small class="field-hint">At least 8 characters.</small>
+          </div>
+          <div class="field">
+            <label for="confirm_password">Confirm password *</label>
+            <div class="password-wrap">
+              <input type="password" id="confirm_password" name="confirm_password" autocomplete="new-password" minlength="8" required data-password-confirm>
+              <button type="button" class="password-toggle" data-toggle-password="confirm_password" aria-label="Show password">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-lg btn-block" type="submit">Create account</button>
+      </form>
+
+      <p class="auth-switch">Already registered? <a href="{{ url_for('auth.login') }}">Log in</a></p>
+    </div>
+  </div>
+</section>
+{% endblock %}

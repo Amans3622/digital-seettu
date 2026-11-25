@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · Digital Seettu{% endblock %}
+
+{% block content %}
+<section class="container error-wrap">
+  <div class="card error-card">
+    <div class="error-code">{{ code }}</div>
+    <h1>{{ title }}</h1>
+    <p>{{ message }}</p>
+    <div class="hero-actions" style="justify-content: center;">
+      <a class="btn btn-primary" href="{{ url_for('dashboard.dashboard') if current_user else url_for('index') }}">
+        {{ 'Back to dashboard' if current_user else 'Back to home' }}
+      </a>
+      {% if current_user %}
+        <a class="btn btn-outline" href="{{ url_for('dashboard.reminders') }}">Reminders</a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

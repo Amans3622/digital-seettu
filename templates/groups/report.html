@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Report · {{ group.name }}{% endblock %}
+
+{% block content %}
+<section class="container page report-page">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a><span>/</span>
+    <a href="{{ url_for('groups.detail', group_id=group.id) }}">{{ group.name }}</a><span>/</span>Report
+  </nav>
+
+  <div class="page-head">
+    <div>
+      <span class="eyebrow">Group report</span>
+      <h1>{{ group.name }}</h1>
+      <p class="muted">{{ group.contribution_amount|money }} · {{ group.frequency|frequency }} · Started {{ group.start_date|datefmt }} · Organised by {{ group.organiser_name }}</p>
+    </div>
+    <div class="head-actions no-print">
+      <a class="btn btn-primary" href="{{ url_for('groups.report_csv', group_id=group.id) }}">Download CSV</a>
+      <button class="btn btn-outline" type="button" data-print>Print</button>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div><span class="stat-label">Expected total</span><strong>{{ summary.expected|money }}</strong><small>{{ summary.member_count }} × {{ summary.round_count }} payments</small></div>
+    </div>
+    <div class="stat-card">
+      <div><span class="stat-label">Collected</span><strong>{{ summary.collected|money }}</strong><small>{{ summary.paid_count }} of {{ summary.total_count }} payments</small></div>
+    </div>
+    <div class="stat-card">
+      <div><span class="stat-label">Pending</span><strong>{{ summary.pending|money }}</strong><small>{{ summary.total_count - summary.paid_count }} payments left</small></div>
+    </div>
+    <div class="stat-card">
+      <div><span class="stat-label">Overdue</span><strong>{{ summary.overdue|money }}</strong><small>{{ summary.overdue_count }} payments past due</small></div>
+    </div>
+  </div>
+
+  <div class="progress-card">
+    <div class="progress-top">
+      <div>
+        <span class="eyebrow">Overall collection</span>
+        <h2>{{ summary.collected_pct|round(0)|int }}% collected</h2>
+        <p class="muted">{{ summary.rounds_completed }} of {{ summary.round_count }} rounds complete · {{ summary.payouts_done }} payout{{ '' if summary.payouts_done == 1 else 's' }} recorded</p>
+      </div>
+      <div class="progress-pct">{{ summary.collected_pct|round(0)|int }}%</div>
+    </div>
+    <div class="bar bar-lg"><span style="width: {{ summary.collected_pct }}%"></span></div>
+  </div>
+
+  <section class="card">
+    <div class="card-head">
+      <div><span class="eyebrow">Member summary</span><h2>Who has paid what</h2></div>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr><th>Turn</th><th>Member</th><th>Paid</th><th>Pending</th><th>Overdue</th><th class="num">Paid total</th><th class="num">Outstanding</th><th>Progress</th></tr>
+        </thead>
+        <tbody>
+          {% for member in members %}
+            {% set pct = ((member.paid_count / member.total_count) * 100)|round(0) if member.total_count else 0 %}
+            <tr>
+              <td>{% if member.turn_order %}<span class="turn-pill">{{ member.turn_order }}</span>{% else %}—{% endif %}</td>
+              <td><div class="member-inline"><span class="avatar avatar-xs">{{ member.full_name|initials }}</span><div>{{ member.full_name }}<small class="muted">{{ member.email }}</small></div></div></td>
+              <td>{{ member.paid_count|int }} / {{ member.total_count|int }}</td>
+              <td>{{ member.pending_total|money }}</td>
+              <td>{{ member.overdue_total|money }}</td>
+              <td class="num">{{ member.paid_total|money }}</td>
+              <td class="num">{{ member.pending_total|money }}</td>
+              <td class="num-cell">
+                <div class="mini-bar"><span style="width: {{ pct }}%"></span></div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <div><span class="eyebrow">Round schedule</span><h2>Collection and payout history</h2></div>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr><th>Round</th><th>Due date</th><th>Beneficiary</th><th class="num">Pot</th><th>Collected</th><th>Status</th><th>Payout date</th></tr>
+        </thead>
+        <tbody>
+          {% for round in schedule %}
+            <tr>
+              <td><span class="round-no">{{ round.round_no }}</span></td>
+              <td>{{ round.due_date|datefmt }}</td>
+              <td>{{ round.beneficiary_name }}</td>
+              <td class="num">{{ (group.contribution_amount * summary.member_count)|money }}</td>
+              <td>{{ round.paid_count }} / {{ round.total_count }}</td>
+              <td><span class="badge badge-{{ 'complete' if round.status == 'completed' else 'pending' }}">{{ 'Complete' if round.status == 'completed' else 'In progress' }}</span></td>
+              <td>{{ round.payout_date|datefmt if round.payout_date else '—' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <p class="report-note muted small">This report is generated from recorded payments only. Payments are entered manually by the organiser after confirming cash or bank transfers.</p>
+</section>
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Create a group · Digital Seettu{% endblock %}
+
+{% block content %}
+<section class="container page page-narrow">
+  <nav class="breadcrumb"><a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a><span>/</span>New group</nav>
+
+  <div class="page-head">
+    <div>
+      <span class="eyebrow">New seettu group</span>
+      <h1>Set up the group</h1>
+      <p class="muted">Start with the rules of the rotation. You will add members in the next step.</p>
+    </div>
+  </div>
+
+  <div class="split-layout">
+    <form method="post" class="card form-card form-stack" novalidate>
+      <div class="field">
+        <label for="name">Group name *</label>
+        <input type="text" id="name" name="name" value="{{ form.name }}" maxlength="100" minlength="3" placeholder="e.g. Office Savers - Batch 24" required>
+        <small class="field-hint">Something your members will recognise.</small>
+      </div>
+
+      <div class="field">
+        <label for="description">Description</label>
+        <input type="text" id="description" name="description" value="{{ form.description }}" maxlength="255" placeholder="Optional note, e.g. monthly office savings group">
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="contribution_amount">Contribution per member *</label>
+          <div class="input-prefix">
+            <span>Rs.</span>
+            <input type="number" id="contribution_amount" name="contribution_amount" value="{{ form.contribution_amount }}" min="1" max="10000000" step="0.01" placeholder="5000.00" required>
+          </div>
+          <small class="field-hint">Every member pays this amount each round.</small>
+        </div>
+        <div class="field">
+          <label for="frequency">Payment frequency *</label>
+          <select id="frequency" name="frequency" required>
+            {% for value, label in frequencies.items() %}
+              <option value="{{ value }}" {% if form.frequency == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="start_date">First round date *</label>
+        <input type="date" id="start_date" name="start_date" value="{{ form.start_date }}" min="{{ today.isoformat() }}" required>
+        <small class="field-hint">The due date for round 1. Later rounds are scheduled from this date.</small>
+      </div>
+
+      <div class="form-actions">
+        <a class="btn btn-ghost" href="{{ url_for('dashboard.dashboard') }}">Cancel</a>
+        <button class="btn btn-primary" type="submit">Create draft group</button>
+      </div>
+    </form>
+
+    <aside class="side-stack">
+      <div class="card tip-card">
+        <span class="icon-tile small">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>
+        </span>
+        <h3>How the pot works</h3>
+        <p>With <strong>5 members</strong> paying <strong>Rs. 5,000</strong>, the pot is <strong>Rs. 25,000</strong> per round.</p>
+        <p class="muted small">There are 5 rounds in total, so each member receives the pot once.</p>
+      </div>
+
+      <div class="card tip-card">
+        <h3>What happens next</h3>
+        <ol class="step-list">
+          <li><span>1</span>Add registered members by email.</li>
+          <li><span>2</span>Assign turn numbers 1 to N.</li>
+          <li><span>3</span>Start the group to create every round and payment record.</li>
+        </ol>
+      </div>
+    </aside>
+  </div>
+</section>
+{% endblock %}

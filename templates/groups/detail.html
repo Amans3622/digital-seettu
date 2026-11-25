@@ -1,0 +1,457 @@
+{% extends "base.html" %}
+{% block title %}{{ group.name }} · Digital Seettu{% endblock %}
+
+{% block content %}
+<section class="container page">
+  <nav class="breadcrumb">
+    <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a><span>/</span>{{ group.name }}
+  </nav>
+
+  <div class="page-head group-head">
+    <div>
+      <div class="chip-row">
+        <span class="badge badge-{{ group.status }}">{{ group.status|capitalize }}</span>
+        <span class="muted small">Organised by {{ group.organiser_name }}</span>
+      </div>
+      <h1>{{ group.name }}</h1>
+      <p class="muted">
+        {{ group.contribution_amount|money }} · {{ group.frequency|frequency }} ·
+        {{ 'Planned start' if group.status == 'draft' else 'Started' }} {{ group.start_date|datefmt }} ·
+        {{ summary.member_count }} member{{ '' if summary.member_count == 1 else 's' }}
+      </p>
+      {% if group.description %}<p class="group-description">{{ group.description }}</p>{% endif %}
+    </div>
+    <div class="head-actions">
+      {% if is_organiser %}
+        {% if group.status != 'draft' %}
+          <a class="btn btn-outline btn-sm" href="{{ url_for('groups.report', group_id=group.id) }}">Report</a>
+        {% endif %}
+        {% if group.status == 'active' %}
+          <form method="post" action="{{ url_for('dashboard.run_reminders') }}">
+            <input type="hidden" name="group_id" value="{{ group.id }}">
+            <button class="btn btn-soft btn-sm" type="submit">Send reminders</button>
+          </form>
+        {% endif %}
+        {% if can_manage %}
+          <form method="post" action="{{ url_for('groups.delete', group_id=group.id) }}" data-confirm="Delete this draft group? This cannot be undone.">
+            <button class="btn btn-danger-ghost btn-sm" type="submit">Delete draft</button>
+          </form>
+        {% endif %}
+      {% elif group.status == 'draft' %}
+        <form method="post" action="{{ url_for('groups.leave', group_id=group.id) }}" data-confirm="Leave this group?">
+          <button class="btn btn-danger-ghost btn-sm" type="submit">Leave group</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <span class="stat-icon teal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </span>
+      <div><span class="stat-label">Members</span><strong>{{ summary.member_count }}</strong><small>{{ summary.round_count or summary.member_count }} rounds planned</small></div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon gold">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      </span>
+      <div><span class="stat-label">Contribution</span><strong>{{ group.contribution_amount|money }}</strong><small>Per member, per round</small></div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon ink">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+      </span>
+      <div><span class="stat-label">Pot per round</span><strong>{{ summary.pot|money }}</strong><small>Paid to one member</small></div>
+    </div>
+    {% if group.status == 'draft' %}
+      <div class="stat-card">
+        <span class="stat-icon red">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+        </span>
+        <div><span class="stat-label">Status</span><strong class="stat-date">Draft</strong><small>Not started yet</small></div>
+      </div>
+    {% else %}
+      <div class="stat-card">
+        <span class="stat-icon red">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>
+        </span>
+        <div>
+          <span class="stat-label">Collected</span>
+          <strong class="js-collected">{{ summary.collected|money }}</strong>
+          <small><span class="js-overdue">{{ summary.overdue|money }}</span> overdue</small>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  {% if group.status == 'completed' %}
+    <div class="banner banner-success">
+      <span class="banner-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6 9 17l-5-5"/></svg>
+      </span>
+      <div><strong>Rotation complete</strong><p>Every round has been collected. The group is now closed.</p></div>
+    </div>
+  {% endif %}
+
+  {% if group.status != 'draft' %}
+    <div class="progress-card">
+      <div class="progress-top">
+        <div>
+          <span class="eyebrow">Collection progress</span>
+          <h2><span class="js-collected">{{ summary.collected|money }}</span> of {{ summary.expected|money }}</h2>
+          <p class="muted"><span class="js-paid-count">{{ summary.paid_count }}</span> of <span class="js-total-count">{{ summary.total_count }}</span> payments recorded · <span class="js-rounds-completed">{{ summary.rounds_completed }}</span> of {{ summary.round_count }} rounds complete</p>
+        </div>
+        <div class="progress-pct js-pct">{{ summary.collected_pct|round(0)|int }}%</div>
+      </div>
+      <div class="bar bar-lg"><span class="js-progress-bar" style="width: {{ summary.collected_pct }}%"></span></div>
+      <div class="progress-foot">
+        <span><strong class="js-pending">{{ summary.pending|money }}</strong> still pending</span>
+        <span><strong class="js-overdue">{{ summary.overdue|money }}</strong> overdue across <span class="js-overdue-count">{{ summary.overdue_count }}</span> payment{{ '' if summary.overdue_count == 1 else 's' }}</span>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if my_membership and group.status != 'draft' %}
+    {% set my_round = schedule|selectattr('beneficiary_member', 'equalto', my_membership.id)|first %}
+    <div class="member-banner">
+      <span class="avatar">{{ current_user.full_name|initials }}</span>
+      <div class="member-banner-copy">
+        <strong>Your position</strong>
+        {% if my_membership.turn_order %}
+          <p>
+            You receive the pot in round {{ my_membership.turn_order }}
+            {% if my_round and my_round.payout_date %}(paid out on {{ my_round.payout_date|datefmt }}){% else %}(round {{ my_membership.turn_order }} collection){% endif %}.
+          </p>
+        {% else %}
+          <p>Your turn has not been assigned yet. The organiser is still setting up the group.</p>
+        {% endif %}
+        <div class="member-mini-stats">
+          <span>Paid <strong>{{ member_view.paid_total|money }}</strong></span>
+          <span>Pending <strong>{{ member_view.pending_total|money }}</strong></span>
+          {% if member_view.next_due %}
+            <span>Next due <strong>{{ member_view.next_due.due_date|datefmt }}</strong> · {{ member_view.next_due.amount|money }}</span>
+          {% endif %}
+        </div>
+      </div>
+      <a class="btn btn-outline btn-sm" href="#ledger">My payments</a>
+    </div>
+  {% endif %}
+
+  {% if group.status == 'draft' and is_organiser %}
+    <div class="grid-2 setup-grid">
+      <section class="card">
+        <div class="card-head">
+          <div>
+            <span class="eyebrow">Step 1</span>
+            <h2>Members and turn order</h2>
+          </div>
+          <span class="badge badge-draft">{{ members|length }} member{{ '' if members|length == 1 else 's' }}</span>
+        </div>
+
+        <form method="post" action="{{ url_for('groups.add_member', group_id=group.id) }}" class="add-member-form">
+          <div class="input-with-button">
+            <input type="email" name="email" placeholder="member@example.com" aria-label="Member email" required>
+            <button class="btn btn-primary" type="submit">Add member</button>
+          </div>
+          <small class="field-hint">The member must already have a Digital Seettu account.</small>
+        </form>
+
+        {% if members %}
+          <form method="post" action="{{ url_for('groups.save_turn_order', group_id=group.id) }}">
+            <div class="table-wrap">
+              <table class="data-table member-table">
+                <thead>
+                  <tr><th>#</th><th>Member</th><th>Email</th><th class="turn-cell">Turn</th><th></th></tr>
+                </thead>
+                <tbody>
+                  {% for member in members %}
+                    <tr>
+                      <td>{{ loop.index }}</td>
+                      <td><div class="member-inline"><span class="avatar avatar-xs">{{ member.full_name|initials }}</span>{{ member.full_name }}</div></td>
+                      <td class="muted">{{ member.email }}</td>
+                      <td class="turn-cell">
+                        <input class="turn-input" type="number" name="order_{{ member.id }}" value="{{ member.turn_order or '' }}" min="1" max="{{ members|length }}" aria-label="Turn for {{ member.full_name }}">
+                      </td>
+                      <td class="num">
+                        <button class="btn btn-xs btn-ghost danger" type="submit" form="remove-{{ member.id }}" aria-label="Remove {{ member.full_name }}">Remove</button>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            <div class="turn-actions">
+              <button class="btn btn-outline btn-sm" type="button" data-autofill-turns>Auto-number 1–{{ members|length }}</button>
+              <button class="btn btn-primary btn-sm" type="submit">Save turn order</button>
+            </div>
+          </form>
+
+          {% for member in members %}
+            <form id="remove-{{ member.id }}" method="post" action="{{ url_for('groups.remove_member', group_id=group.id, member_id=member.id) }}" data-confirm="Remove {{ member.full_name }} from this group?"></form>
+          {% endfor %}
+        {% else %}
+          <div class="empty-state compact">
+            <h3>No members yet</h3>
+            <p>Add at least two registered members to start the rotation.</p>
+          </div>
+        {% endif %}
+      </section>
+
+      <aside class="side-stack">
+        <div class="card invite-card">
+          <span class="eyebrow">Invite members</span>
+          <h3>Share this code</h3>
+          <p class="muted small">Members can join from their dashboard with the code while the group is a draft.</p>
+          <div class="code-display">
+            <code>{{ group.invite_code }}</code>
+            <button class="btn btn-soft btn-sm" type="button" data-copy="{{ group.invite_code }}">Copy</button>
+          </div>
+        </div>
+
+        <div class="card start-card">
+          <span class="eyebrow">Step 2</span>
+          <h3>Start the rotation</h3>
+          <ul class="check-list">
+            <li class="{{ 'is-done' if members|length >= 2 }}">
+              <span class="check-dot"></span>At least 2 members added
+            </li>
+            <li class="{{ 'is-done' if members and members|map(attribute='turn_order')|select|list|length == members|length }}">
+              <span class="check-dot"></span>Every member has a turn number
+            </li>
+            <li><span class="check-dot"></span>Rounds and payments are generated automatically</li>
+            <li><span class="check-dot"></span>Members and turn order lock after starting</li>
+          </ul>
+          <form method="post" action="{{ url_for('groups.start', group_id=group.id) }}" data-confirm="Start the group now? Rounds and payment records will be created, and the member list will lock.">
+            <button class="btn btn-primary btn-block" type="submit">Start group</button>
+          </form>
+        </div>
+      </aside>
+    </div>
+  {% elif group.status == 'draft' and my_membership %}
+    <div class="grid-2 setup-grid">
+      <section class="card">
+        <div class="card-head">
+          <div><span class="eyebrow">Waiting to start</span><h2>The organiser is setting up this group</h2></div>
+        </div>
+        <p class="muted">You are on the member list. Once everyone has a turn number, the organiser will start the rotation and your payments will appear here.</p>
+        {% if members %}
+          <div class="table-wrap">
+            <table class="data-table member-table">
+              <thead><tr><th>#</th><th>Member</th><th>Turn</th></tr></thead>
+              <tbody>
+                {% for member in members %}
+                  <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><div class="member-inline"><span class="avatar avatar-xs">{{ member.full_name|initials }}</span>{{ member.full_name }}{% if member.user_id == current_user.id %}<span class="you-tag">You</span>{% endif %}</div></td>
+                    <td>{% if member.turn_order %}<span class="turn-pill">{{ member.turn_order }}</span>{% else %}<span class="muted">Not set</span>{% endif %}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% endif %}
+      </section>
+      <aside class="side-stack">
+        <div class="card tip-card">
+          <h3>Planned pot</h3>
+          <p><strong>{{ summary.pot|money }}</strong> per round with {{ summary.member_count }} members paying {{ group.contribution_amount|money }}.</p>
+          <p class="muted small">Your turn: {% if my_membership.turn_order %}round {{ my_membership.turn_order }}{% else %}not assigned yet{% endif %}.</p>
+        </div>
+      </aside>
+    </div>
+  {% else %}
+    <div class="grid-2">
+      <section class="card">
+        <div class="card-head">
+          <div><span class="eyebrow">Rotation</span><h2>Rounds and payouts</h2></div>
+          <span class="muted small">{{ summary.rounds_completed }} of {{ summary.round_count }} complete</span>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table round-table">
+            <thead>
+              <tr><th>Round</th><th>Due date</th><th>Receives pot</th><th class="num">Pot</th><th>Collected</th><th>Status</th><th>Payout</th></tr>
+            </thead>
+            <tbody>
+              {% for round in schedule %}
+                <tr data-round-row="{{ round.id }}">
+                  <td><span class="round-no">{{ round.round_no }}</span></td>
+                  <td>
+                    {{ round.due_date|datefmt }}
+                    {% if round.due_date < today and round.status != 'completed' %}<span class="badge badge-overdue">Late</span>{% endif %}
+                  </td>
+                  <td><div class="member-inline"><span class="avatar avatar-xs">{{ round.beneficiary_name|initials }}</span>{{ round.beneficiary_name }}</div></td>
+                  <td class="num">{{ summary.pot|money }}</td>
+                  <td><span class="js-round-paid">{{ round.paid_count }}</span>/{{ round.total_count }}</td>
+                  <td>
+                    <span class="badge js-round-status badge-{{ 'complete' if round.status == 'completed' else 'pending' }}">
+                      {{ 'Complete' if round.status == 'completed' else 'In progress' }}
+                    </span>
+                  </td>
+                  <td class="js-round-payout">
+                    {% if round.payout_date %}
+                      <span class="paid-note">Paid {{ round.payout_date|datefmt }}</span>
+                    {% elif round.status == 'completed' and is_organiser %}
+                      <form method="post" action="{{ url_for('groups.mark_payout', group_id=group.id, round_id=round.id) }}" data-confirm="Record that the pot was given to {{ round.beneficiary_name }}?">
+                        <button class="btn btn-xs btn-soft" type="submit">Release payout</button>
+                      </form>
+                    {% elif round.status == 'completed' %}
+                      <span class="paid-note">Ready</span>
+                    {% else %}
+                      <span class="muted">Waiting for payments</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <p class="scroll-hint">Swipe the table sideways to see every column.</p>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <div><span class="eyebrow">Turn order</span><h2>Members</h2></div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table member-table">
+            <thead><tr><th>Turn</th><th>Member</th><th>Payout round</th></tr></thead>
+            <tbody>
+              {% for member in members %}
+                {% set member_round = schedule|selectattr('beneficiary_member', 'equalto', member.id)|first %}
+                <tr>
+                  <td>{% if member.turn_order %}<span class="turn-pill">{{ member.turn_order }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+                  <td>
+                    <div class="member-inline">
+                      <span class="avatar avatar-xs">{{ member.full_name|initials }}</span>
+                      <div>
+                        {{ member.full_name }}
+                        {% if member.user_id == current_user.id %}<span class="you-tag">You</span>{% endif %}
+                        <small class="muted">{{ member.email }}</small>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    {% if member_round %}
+                      <span class="small">Round {{ member_round.round_no }}</span><br>
+                      {% if member_round.payout_date %}
+                        <small class="paid-note">Paid out</small>
+                      {% elif member_round.status == 'completed' %}
+                        <small class="muted">Ready for payout</small>
+                      {% else %}
+                        <small class="muted">Collecting</small>
+                      {% endif %}
+                    {% else %}
+                      <span class="muted">—</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <section class="card ledger-card" id="ledger">
+      <div class="card-head ledger-head">
+        <div>
+          <span class="eyebrow">Shared record</span>
+          <h2>Payment ledger</h2>
+        </div>
+        <span class="muted small">Every member can see this ledger</span>
+      </div>
+
+      <div class="ledger-tools">
+        <div class="search-input">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input type="search" placeholder="Search member, email or round" data-ledger-search aria-label="Search ledger">
+        </div>
+        <select data-ledger-round aria-label="Filter by round">
+          <option value="">All rounds</option>
+          {% for round in schedule %}
+            <option value="{{ round.round_no }}">Round {{ round.round_no }}</option>
+          {% endfor %}
+        </select>
+        <select data-ledger-status aria-label="Filter by status">
+          <option value="">All statuses</option>
+          <option value="paid">Paid</option>
+          <option value="pending">Pending</option>
+          <option value="overdue">Overdue</option>
+        </select>
+      </div>
+
+      <div class="table-wrap">
+        <table class="data-table ledger-table">
+          <thead>
+            <tr>
+              <th>Member</th><th>Round / due</th><th class="num">Amount</th><th>Status</th>
+              <th>Paid on</th><th>Method</th>{% if is_organiser %}<th class="num">Action</th>{% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for payment in ledger %}
+              {% set is_overdue = payment.status == 'pending' and payment.due_date < today %}
+              {% set status_key = 'paid' if payment.status == 'paid' else ('overdue' if is_overdue else 'pending') %}
+              <tr class="{{ 'is-mine' if payment.user_id == current_user.id }}"
+                  data-status="{{ status_key }}"
+                  data-round="{{ payment.round_no }}"
+                  data-round-id="{{ payment.round_id }}"
+                  data-search="{{ payment.full_name|lower }} {{ payment.email|lower }} round {{ payment.round_no }}"
+                  data-payment-id="{{ payment.payment_id }}">
+                <td>
+                  <div class="member-inline">
+                    <span class="avatar avatar-xs">{{ payment.full_name|initials }}</span>
+                    <div>
+                      {{ payment.full_name }}
+                      {% if payment.user_id == current_user.id %}<span class="you-tag">You</span>{% endif %}
+                      <small class="muted">{{ payment.email }}</small>
+                    </div>
+                  </div>
+                </td>
+                <td>Round {{ payment.round_no }}<br><small class="muted">{{ payment.due_date|datefmt }}</small></td>
+                <td class="num">{{ payment.amount|money }}</td>
+                <td>
+                  <span class="badge js-pay-status badge-{{ status_key }}">
+                    {{ 'Paid' if status_key == 'paid' else ('Overdue' if status_key == 'overdue' else 'Pending') }}
+                  </span>
+                </td>
+                <td class="js-pay-date">{{ payment.paid_date|datefmt if payment.paid_date else '—' }}</td>
+                <td class="js-pay-method">{{ payment.method|capitalize if payment.method else '—' }}</td>
+                {% if is_organiser %}
+                  <td class="num">
+                    <div class="js-pay-actions">
+                      <form class="pay-action action-paid" method="post" action="{{ url_for('groups.mark_paid', group_id=group.id, payment_id=payment.payment_id) }}" data-payment-form>
+                        <select name="method" aria-label="Payment method">
+                          <option value="cash">Cash</option>
+                          <option value="bank">Bank</option>
+                          <option value="other">Other</option>
+                        </select>
+                        <button class="btn btn-xs btn-primary" type="submit">Mark paid</button>
+                      </form>
+                      <form class="pay-action action-pending" method="post" action="{{ url_for('groups.mark_pending', group_id=group.id, payment_id=payment.payment_id) }}" data-payment-form data-confirm="Set this payment back to pending?">
+                        <button class="btn btn-xs btn-ghost" type="submit">Undo</button>
+                      </form>
+                    </div>
+                  </td>
+                {% endif %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="scroll-hint">Swipe the table sideways to see payment dates and actions.</p>
+      <p class="ledger-empty" data-ledger-empty hidden>No payments match those filters.</p>
+    </section>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.SEETTU_GROUP = {
+    groupId: {{ group.id }},
+    currency: 'LKR'
+  };
+</script>
+{% endblock %}
