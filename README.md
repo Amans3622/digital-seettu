@@ -1,6 +1,6 @@
 # Digital Seettu Management System
 
-Mini project **24IT0518** — BSc (Hons) in Information Technology, Institute of Technology, University of Moratuwa.
+Mini project **24IT0518** — Diploma in Information Technology, Institute of Technology, University of Moratuwa.
 
 A web application that replaces the paper notebook used to run a **seettu** (rotating savings group).
 The organiser creates a group, adds members, assigns turn order, records contributions and releases payouts.
